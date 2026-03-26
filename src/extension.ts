@@ -133,41 +133,7 @@ async function showJumpPicker(
     void openIndexedSymbol(item.symbol);
   });
 
-  let peekTimeout: ReturnType<typeof setTimeout> | undefined;
-
-  quickPick.onDidChangeActive((activeItems) => {
-    if (peekTimeout !== undefined) {
-      clearTimeout(peekTimeout);
-    }
-    peekTimeout = setTimeout(() => {
-      peekTimeout = undefined;
-      const active = activeItems[0] as SymbolQuickPickItem | undefined;
-      if (!active || !("symbol" in active)) {
-        return;
-      }
-      void vscode.workspace
-        .openTextDocument(active.symbol.uri)
-        .then((doc) =>
-          vscode.window.showTextDocument(doc, {
-            preview: true,
-            preserveFocus: true,
-            viewColumn: vscode.ViewColumn.Active,
-          }),
-        )
-        .then((editor) => {
-          editor.revealRange(
-            active.symbol.range,
-            vscode.TextEditorRevealType.InCenterIfOutsideViewport,
-          );
-        });
-    }, 300);
-  });
-
   quickPick.onDidHide(() => {
-    if (peekTimeout !== undefined) {
-      clearTimeout(peekTimeout);
-      peekTimeout = undefined;
-    }
     indexChangeDisposable.dispose();
     quickPick.dispose();
   });
