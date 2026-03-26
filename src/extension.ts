@@ -1,25 +1,111 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
+import { openIndexedSymbol } from "./navigation";
+import type { SymbolQuickPickItem } from "./pickerItems";
+import { createQuickPickItems } from "./pickerItems";
+import { SymbolIndexService } from "./symbolIndexService";
+import type { SearchMode } from "./types";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "zip2" is now active!');
+const COMMANDS: ReadonlyArray<{
+  readonly id: string;
+  readonly mode: SearchMode;
+  readonly title: string;
+  readonly placeholder: string;
+}> = [
+  {
+    id: "zip2.searchSymbols",
+    mode: "all",
+    title: "Zip2: Search Components and Functions",
+    placeholder: "Search components and functions",
+  },
+  {
+    id: "zip2.searchComponents",
+    mode: "component",
+    title: "Zip2: Search Components",
+    placeholder: "Search components",
+  },
+  {
+    id: "zip2.searchFunctions",
+    mode: "function",
+    title: "Zip2: Search Functions",
+    placeholder: "Search functions",
+  },
+];
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
-  const disposable = vscode.commands.registerCommand("zip2.helloWorld", () => {
-    // The code you place here will be executed every time your command is executed
-    // Display a message box to the user
-    vscode.window.showInformationMessage("Hello World from Zip2!");
+async function showJumpPicker(
+  indexService: SymbolIndexService,
+  mode: SearchMode,
+  title: string,
+  placeholder: string,
+): Promise<void> {
+  const quickPick = vscode.window.createQuickPick<SymbolQuickPickItem>();
+
+  quickPick.title = title;
+  quickPick.placeholder = placeholder;
+  quickPick.matchOnDescription = false;
+  quickPick.matchOnDetail = true;
+  quickPick.busy = true;
+
+  const refreshItems = () => {
+    quickPick.items = createQuickPickItems(indexService.getSymbols(), mode);
+  };
+
+  const indexChangeDisposable = indexService.onDidChangeIndex(() => {
+    refreshItems();
   });
 
-  context.subscriptions.push(disposable);
+  const finishInitialization = indexService
+    .ensureInitialized()
+    .catch(async (error) => {
+      console.error("Zip2 failed to initialize.", error);
+      await vscode.window.showErrorMessage(
+        "Zip2 failed to build its symbol index. Check the developer console for details.",
+      );
+    })
+    .finally(() => {
+      quickPick.busy = false;
+      refreshItems();
+    });
+
+  quickPick.onDidAccept(() => {
+    const item = quickPick.selectedItems[0];
+
+    if (!item) {
+      return;
+    }
+
+    quickPick.hide();
+    void openIndexedSymbol(item.symbol);
+  });
+
+  quickPick.onDidHide(() => {
+    indexChangeDisposable.dispose();
+    quickPick.dispose();
+  });
+
+  refreshItems();
+  quickPick.show();
+
+  await finishInitialization;
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function activate(context: vscode.ExtensionContext): void {
+  const indexService = new SymbolIndexService();
+  context.subscriptions.push(indexService);
+
+  void indexService.ensureInitialized();
+
+  for (const command of COMMANDS) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(command.id, async () => {
+        await showJumpPicker(
+          indexService,
+          command.mode,
+          command.title,
+          command.placeholder,
+        );
+      }),
+    );
+  }
+}
+
+export function deactivate(): void {}

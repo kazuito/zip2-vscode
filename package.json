@@ -1,7 +1,7 @@
 {
   "name": "zip2",
   "displayName": "Zip2",
-  "description": "",
+  "description": "Quick search for workspace functions and React-style components.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.110.0"
@@ -9,13 +9,26 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "zip2.helloWorld",
-        "title": "Hello World"
+        "command": "zip2.searchSymbols",
+        "title": "Search Components and Functions",
+        "category": "Zip2"
+      },
+      {
+        "command": "zip2.searchComponents",
+        "title": "Search Components",
+        "category": "Zip2"
+      },
+      {
+        "command": "zip2.searchFunctions",
+        "title": "Search Functions",
+        "category": "Zip2"
       }
     ]
   },
@@ -23,9 +36,12 @@
     "vscode:prepublish": "pnpm bundle",
     "bundle": "rolldown --config rolldown.config.ts",
     "watch": "rolldown --config rolldown.config.ts --watch",
+    "compile-tests": "node ./scripts/compile-tests.mjs",
     "lint": "biome lint",
     "format": "biome format --write",
     "check": "pnpm biome check --write --unsafe && pnpm typecheck",
+    "pretest": "pnpm bundle && pnpm compile-tests",
+    "test": "vscode-test",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
