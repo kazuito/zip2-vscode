@@ -15,6 +15,19 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Zip2",
+      "properties": {
+        "zip2.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional glob patterns to exclude from indexing (e.g. [\"**/generated/**\", \"**/.turbo/**\"])."
+        }
+      }
+    },
     "commands": [
       {
         "command": "zip2.searchSymbols",
@@ -29,6 +42,11 @@
       {
         "command": "zip2.searchFunctions",
         "title": "Search Functions",
+        "category": "Zip2"
+      },
+      {
+        "command": "zip2.searchHooks",
+        "title": "Search Hooks",
         "category": "Zip2"
       }
     ]

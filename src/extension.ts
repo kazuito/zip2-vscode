@@ -29,15 +29,27 @@ const COMMANDS: ReadonlyArray<{
     title: "Zip2: Search Functions",
     placeholder: "Search functions",
   },
+  {
+    id: "zip2.searchHooks",
+    mode: "hook",
+    title: "Zip2: Search Hooks",
+    placeholder: "Search hooks",
+  },
 ];
 
 async function showJumpPicker(
+  context: vscode.ExtensionContext,
   indexService: SymbolIndexService,
   mode: SearchMode,
   title: string,
   placeholder: string,
 ): Promise<void> {
-  const quickPick = vscode.window.createQuickPick<SymbolQuickPickItem>();
+  const RECENT_KEY = "zip2.recentSymbols";
+  type RecentEntry = { name: string; path: string };
+
+  const quickPick = vscode.window.createQuickPick<
+    SymbolQuickPickItem | vscode.QuickPickItem
+  >();
 
   quickPick.title = title;
   quickPick.placeholder = placeholder;
@@ -45,8 +57,38 @@ async function showJumpPicker(
   quickPick.matchOnDetail = true;
   quickPick.busy = true;
 
+  const buildItems = (): (SymbolQuickPickItem | vscode.QuickPickItem)[] => {
+    const allItems = createQuickPickItems(indexService.getSymbols(), mode);
+    const recents = context.workspaceState.get<RecentEntry[]>(RECENT_KEY, []);
+    const recentItems: SymbolQuickPickItem[] = [];
+    for (const entry of recents) {
+      const match = allItems.find(
+        (item) =>
+          item.symbol.name === entry.name && item.symbol.path === entry.path,
+      );
+      if (match) {
+        recentItems.push(match);
+      }
+    }
+    if (recentItems.length === 0) {
+      return allItems;
+    }
+    const recentPaths = new Set(
+      recentItems.map((item) => `${item.symbol.name}::${item.symbol.path}`),
+    );
+    const restItems = allItems.filter(
+      (item) => !recentPaths.has(`${item.symbol.name}::${item.symbol.path}`),
+    );
+    return [
+      { label: "Recently Visited", kind: vscode.QuickPickItemKind.Separator },
+      ...recentItems,
+      { label: "", kind: vscode.QuickPickItemKind.Separator },
+      ...restItems,
+    ];
+  };
+
   const refreshItems = () => {
-    quickPick.items = createQuickPickItems(indexService.getSymbols(), mode);
+    quickPick.items = buildItems();
   };
 
   const indexChangeDisposable = indexService.onDidChangeIndex(() => {
@@ -67,17 +109,65 @@ async function showJumpPicker(
     });
 
   quickPick.onDidAccept(() => {
-    const item = quickPick.selectedItems[0];
+    const item = quickPick.selectedItems[0] as SymbolQuickPickItem | undefined;
 
-    if (!item) {
+    if (!item || !("symbol" in item)) {
       return;
     }
 
     quickPick.hide();
+
+    const recents = context.workspaceState.get<RecentEntry[]>(RECENT_KEY, []);
+    const entry: RecentEntry = {
+      name: item.symbol.name,
+      path: item.symbol.path,
+    };
+    const updated = [
+      entry,
+      ...recents.filter(
+        (r) => !(r.name === entry.name && r.path === entry.path),
+      ),
+    ].slice(0, 5);
+    void context.workspaceState.update(RECENT_KEY, updated);
+
     void openIndexedSymbol(item.symbol);
   });
 
+  let peekTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  quickPick.onDidChangeActive((activeItems) => {
+    if (peekTimeout !== undefined) {
+      clearTimeout(peekTimeout);
+    }
+    peekTimeout = setTimeout(() => {
+      peekTimeout = undefined;
+      const active = activeItems[0] as SymbolQuickPickItem | undefined;
+      if (!active || !("symbol" in active)) {
+        return;
+      }
+      void vscode.workspace
+        .openTextDocument(active.symbol.uri)
+        .then((doc) =>
+          vscode.window.showTextDocument(doc, {
+            preview: true,
+            preserveFocus: true,
+            viewColumn: vscode.ViewColumn.Active,
+          }),
+        )
+        .then((editor) => {
+          editor.revealRange(
+            active.symbol.range,
+            vscode.TextEditorRevealType.InCenterIfOutsideViewport,
+          );
+        });
+    }, 300);
+  });
+
   quickPick.onDidHide(() => {
+    if (peekTimeout !== undefined) {
+      clearTimeout(peekTimeout);
+      peekTimeout = undefined;
+    }
     indexChangeDisposable.dispose();
     quickPick.dispose();
   });
@@ -98,6 +188,7 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
       vscode.commands.registerCommand(command.id, async () => {
         await showJumpPicker(
+          context,
           indexService,
           command.mode,
           command.title,

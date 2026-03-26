@@ -7,7 +7,10 @@ export async function openIndexedSymbol(symbol: IndexedSymbol): Promise<void> {
     preview: false,
   });
 
-  editor.selection = new vscode.Selection(symbol.range.start, symbol.range.start);
+  editor.selection = new vscode.Selection(
+    symbol.range.start,
+    symbol.range.start,
+  );
   editor.revealRange(
     symbol.range,
     vscode.TextEditorRevealType.InCenterIfOutsideViewport,

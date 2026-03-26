@@ -25,10 +25,25 @@ function isFileUri(uri: vscode.Uri): boolean {
   return uri.scheme === "file";
 }
 
+function buildExcludeGlob(): string {
+  const user = vscode.workspace
+    .getConfiguration("zip2")
+    .get<string[]>("excludePatterns", []);
+  if (user.length === 0) return INDEX_EXCLUDE_GLOB;
+  return `{${INDEX_EXCLUDE_GLOB},${user.join(",")}}`;
+}
+
 function isIgnoredPath(filePath: string): boolean {
-  return filePath
-    .split(path.sep)
-    .some((segment) => EXCLUDE_SEGMENTS.has(segment));
+  const segments = filePath.split(path.sep);
+  if (segments.some((seg) => EXCLUDE_SEGMENTS.has(seg))) return true;
+  const userPatterns = vscode.workspace
+    .getConfiguration("zip2")
+    .get<string[]>("excludePatterns", []);
+  for (const pattern of userPatterns) {
+    const match = /^\*\*\/([^/*]+)\/\*\*$/.exec(pattern);
+    if (match && segments.includes(match[1])) return true;
+  }
+  return false;
 }
 
 function isIndexableUri(uri: vscode.Uri): boolean {
@@ -194,7 +209,7 @@ export class SymbolIndexService implements vscode.Disposable {
 
     const discoveredUris = await vscode.workspace.findFiles(
       INDEX_GLOB,
-      INDEX_EXCLUDE_GLOB,
+      buildExcludeGlob(),
     );
     const uniqueUris = new Map<string, vscode.Uri>();
 

@@ -32,10 +32,19 @@ export function createQuickPickItems(
 
   filteredSymbols.sort(compareSymbols);
 
-  return filteredSymbols.map((symbol) => ({
-    label: symbol.name,
-    description: symbol.kind === "component" ? "Component" : "Function",
-    detail: `${symbol.path}:${symbol.range.start.line + 1}`,
-    symbol,
-  }));
+  return filteredSymbols.map((symbol) => {
+    const codicon =
+      symbol.kind === "component"
+        ? "$(symbol-class)"
+        : symbol.kind === "hook"
+          ? "$(symbol-event)"
+          : "$(symbol-function)";
+
+    return {
+      label: `${codicon} ${symbol.name}`,
+      description: symbol.kind === "component" ? "Component" : "Function",
+      detail: `${symbol.path}:${symbol.range.start.line + 1}`,
+      symbol,
+    };
+  });
 }

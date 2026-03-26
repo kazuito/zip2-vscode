@@ -49,11 +49,10 @@ function hasJsxEvidence(node: ts.Node | undefined): boolean {
   return foundJsx;
 }
 
-function toRange(
-  sourceFile: ts.SourceFile,
-  node: ts.Node,
-): vscode.Range {
-  const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+function toRange(sourceFile: ts.SourceFile, node: ts.Node): vscode.Range {
+  const start = sourceFile.getLineAndCharacterOfPosition(
+    node.getStart(sourceFile),
+  );
   const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
 
   return new vscode.Range(start.line, start.character, end.line, end.character);
@@ -61,11 +60,12 @@ function toRange(
 
 function classifySymbol(
   name: string,
-  callable:
-    | ts.FunctionDeclaration
-    | ts.FunctionExpression
-    | ts.ArrowFunction,
+  callable: ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction,
 ): IndexedSymbolKind {
+  if (/^use[A-Z]/.test(name)) {
+    return "hook";
+  }
+
   if (isPascalCase(name) && hasJsxEvidence(callable.body)) {
     return "component";
   }
@@ -79,10 +79,7 @@ function createSymbol(
   relativePath: string,
   name: string,
   nameNode: ts.Node,
-  callable:
-    | ts.FunctionDeclaration
-    | ts.FunctionExpression
-    | ts.ArrowFunction,
+  callable: ts.FunctionDeclaration | ts.FunctionExpression | ts.ArrowFunction,
 ): IndexedSymbol {
   const kind = classifySymbol(name, callable);
 
@@ -182,14 +179,24 @@ export function extractSymbolsFromText(
   for (const statement of sourceFile.statements) {
     if (ts.isFunctionDeclaration(statement)) {
       symbols.push(
-        ...extractFromFunctionDeclaration(sourceFile, uri, relativePath, statement),
+        ...extractFromFunctionDeclaration(
+          sourceFile,
+          uri,
+          relativePath,
+          statement,
+        ),
       );
       continue;
     }
 
     if (ts.isVariableStatement(statement)) {
       symbols.push(
-        ...extractFromVariableStatement(sourceFile, uri, relativePath, statement),
+        ...extractFromVariableStatement(
+          sourceFile,
+          uri,
+          relativePath,
+          statement,
+        ),
       );
     }
   }

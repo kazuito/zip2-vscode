@@ -5,7 +5,7 @@ import type { IndexedSymbol } from "../types";
 
 function symbol(
   name: string,
-  kind: "function" | "component",
+  kind: "function" | "component" | "hook",
   path: string,
   line: number,
 ): IndexedSymbol {
@@ -30,7 +30,11 @@ suite("createQuickPickItems", () => {
 
     assert.deepStrictEqual(
       items.map((item) => item.label),
-      ["Button", "greetUser", "InputField"],
+      [
+        "$(symbol-class) Button",
+        "$(symbol-function) greetUser",
+        "$(symbol-class) InputField",
+      ],
     );
   });
 
@@ -39,13 +43,16 @@ suite("createQuickPickItems", () => {
 
     assert.deepStrictEqual(
       items.map((item) => item.label),
-      ["Button", "InputField"],
+      ["$(symbol-class) Button", "$(symbol-class) InputField"],
     );
   });
 
   test("filters to functions", () => {
     const items = createQuickPickItems(symbols, "function");
 
-    assert.deepStrictEqual(items.map((item) => item.label), ["greetUser"]);
+    assert.deepStrictEqual(
+      items.map((item) => item.label),
+      ["$(symbol-function) greetUser"],
+    );
   });
 });

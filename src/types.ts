@@ -1,8 +1,8 @@
 import type * as vscode from "vscode";
 
-export type SearchMode = "all" | "function" | "component";
+export type SearchMode = "all" | "function" | "component" | "hook";
 
-export type IndexedSymbolKind = "function" | "component";
+export type IndexedSymbolKind = "function" | "component" | "hook";
 
 export interface IndexedSymbol {
   readonly name: string;
