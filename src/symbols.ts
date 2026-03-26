@@ -25,6 +25,32 @@ function isPascalCase(name: string): boolean {
   return /^[A-Z][A-Za-z0-9]*$/.test(name);
 }
 
+const COMPONENT_WRAPPERS = new Set(["memo", "forwardRef"]);
+
+function unwrapHocCallable(
+  node: ts.Expression,
+): ts.FunctionExpression | ts.ArrowFunction | undefined {
+  if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+    return node;
+  }
+
+  if (ts.isCallExpression(node) && node.arguments.length > 0) {
+    const callee = node.expression;
+    const isKnownWrapper =
+      (ts.isIdentifier(callee) && COMPONENT_WRAPPERS.has(callee.text)) ||
+      (ts.isPropertyAccessExpression(callee) &&
+        ts.isIdentifier(callee.expression) &&
+        callee.expression.text === "React" &&
+        COMPONENT_WRAPPERS.has(callee.name.text));
+
+    if (isKnownWrapper) {
+      return unwrapHocCallable(node.arguments[0]);
+    }
+  }
+
+  return undefined;
+}
+
 function hasJsxEvidence(node: ts.Node | undefined): boolean {
   if (!node) {
     return false;
@@ -127,10 +153,8 @@ function extractFromVariableStatement(
       continue;
     }
 
-    if (
-      !ts.isArrowFunction(declaration.initializer) &&
-      !ts.isFunctionExpression(declaration.initializer)
-    ) {
+    const callable = unwrapHocCallable(declaration.initializer);
+    if (!callable) {
       continue;
     }
 
@@ -141,7 +165,7 @@ function extractFromVariableStatement(
         relativePath,
         declaration.name.text,
         declaration.name,
-        declaration.initializer,
+        callable,
       ),
     );
   }

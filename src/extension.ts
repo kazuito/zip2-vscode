@@ -5,6 +5,17 @@ import { createQuickPickItems } from "./pickerItems";
 import { SymbolIndexService } from "./symbolIndexService";
 import type { SearchMode } from "./types";
 
+const OPEN_BESIDE_BUTTON: vscode.QuickInputButton = {
+  iconPath: new vscode.ThemeIcon("split-horizontal"),
+  tooltip: "Open to the Side",
+};
+
+function isSymbolQuickPickItem(
+  item: vscode.QuickPickItem,
+): item is SymbolQuickPickItem {
+  return "symbol" in item;
+}
+
 const COMMANDS: ReadonlyArray<{
   readonly id: string;
   readonly mode: SearchMode;
@@ -57,8 +68,19 @@ async function showJumpPicker(
   quickPick.matchOnDetail = true;
   quickPick.busy = true;
 
+  let cachedBaseItems: SymbolQuickPickItem[] | undefined;
+
+  const getBaseItems = (): SymbolQuickPickItem[] => {
+    if (!cachedBaseItems) {
+      cachedBaseItems = createQuickPickItems(indexService.getSymbols(), mode).map(
+        (item) => ({ ...item, buttons: [OPEN_BESIDE_BUTTON] }),
+      );
+    }
+    return cachedBaseItems;
+  };
+
   const buildItems = (): (SymbolQuickPickItem | vscode.QuickPickItem)[] => {
-    const allItems = createQuickPickItems(indexService.getSymbols(), mode);
+    const allItems = getBaseItems();
     const recents = context.workspaceState.get<RecentEntry[]>(RECENT_KEY, []);
     const recentItems: SymbolQuickPickItem[] = [];
     for (const entry of recents) {
@@ -91,7 +113,27 @@ async function showJumpPicker(
     quickPick.items = buildItems();
   };
 
+  const navigateToItem = (
+    item: SymbolQuickPickItem,
+    viewColumn?: vscode.ViewColumn,
+  ): void => {
+    const recents = context.workspaceState.get<RecentEntry[]>(RECENT_KEY, []);
+    const entry: RecentEntry = {
+      name: item.symbol.name,
+      path: item.symbol.path,
+    };
+    const updated = [
+      entry,
+      ...recents.filter(
+        (r) => !(r.name === entry.name && r.path === entry.path),
+      ),
+    ].slice(0, 5);
+    void context.workspaceState.update(RECENT_KEY, updated);
+    void openIndexedSymbol(item.symbol, viewColumn);
+  };
+
   const indexChangeDisposable = indexService.onDidChangeIndex(() => {
+    cachedBaseItems = undefined;
     refreshItems();
   });
 
@@ -109,28 +151,20 @@ async function showJumpPicker(
     });
 
   quickPick.onDidAccept(() => {
-    const item = quickPick.selectedItems[0] as SymbolQuickPickItem | undefined;
-
-    if (!item || !("symbol" in item)) {
+    const item = quickPick.selectedItems[0];
+    if (!item || !isSymbolQuickPickItem(item)) {
       return;
     }
-
     quickPick.hide();
+    navigateToItem(item);
+  });
 
-    const recents = context.workspaceState.get<RecentEntry[]>(RECENT_KEY, []);
-    const entry: RecentEntry = {
-      name: item.symbol.name,
-      path: item.symbol.path,
-    };
-    const updated = [
-      entry,
-      ...recents.filter(
-        (r) => !(r.name === entry.name && r.path === entry.path),
-      ),
-    ].slice(0, 5);
-    void context.workspaceState.update(RECENT_KEY, updated);
-
-    void openIndexedSymbol(item.symbol);
+  quickPick.onDidTriggerItemButton((event) => {
+    if (!isSymbolQuickPickItem(event.item)) {
+      return;
+    }
+    quickPick.hide();
+    navigateToItem(event.item, vscode.ViewColumn.Beside);
   });
 
   quickPick.onDidHide(() => {

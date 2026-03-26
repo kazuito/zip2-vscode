@@ -30,11 +30,7 @@ suite("createQuickPickItems", () => {
 
     assert.deepStrictEqual(
       items.map((item) => item.label),
-      [
-        "$(symbol-class) Button",
-        "$(symbol-function) greetUser",
-        "$(symbol-class) InputField",
-      ],
+      ["<Button />", "greetUser()", "<InputField />"],
     );
   });
 
@@ -43,7 +39,7 @@ suite("createQuickPickItems", () => {
 
     assert.deepStrictEqual(
       items.map((item) => item.label),
-      ["$(symbol-class) Button", "$(symbol-class) InputField"],
+      ["<Button />", "<InputField />"],
     );
   });
 
@@ -52,7 +48,7 @@ suite("createQuickPickItems", () => {
 
     assert.deepStrictEqual(
       items.map((item) => item.label),
-      ["$(symbol-function) greetUser"],
+      ["greetUser()"],
     );
   });
 });
