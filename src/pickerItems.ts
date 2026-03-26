@@ -1,4 +1,4 @@
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 import type { IndexedSymbol, SearchMode } from "./types";
 
 export interface SymbolQuickPickItem extends vscode.QuickPickItem {
@@ -32,17 +32,19 @@ export function createQuickPickItems(
 
   filteredSymbols.sort(compareSymbols);
 
-  return filteredSymbols.map((symbol) => {
-    const codicon =
-      symbol.kind === "component"
-        ? "$(symbol-class)"
-        : symbol.kind === "hook"
-          ? "$(symbol-event)"
-          : "$(symbol-function)";
+  const config = vscode.workspace.getConfiguration("zip2");
+  const formats = {
+    function: config.get<string>("functionLabelFormat"),
+    component: config.get<string>("componentLabelFormat"),
+    hook: config.get<string>("hookLabelFormat"),
+  };
 
+  return filteredSymbols.map((symbol) => {
+    const fmt = formats[symbol.kind];
+    const label = fmt ? fmt.replace("${name}", symbol.name) : symbol.name;
     return {
-      label: `${codicon} ${symbol.name}`,
-      description: symbol.kind === "component" ? "Component" : "Function",
+      label,
+      description: symbol.kind.charAt(0).toUpperCase() + symbol.kind.slice(1),
       detail: `${symbol.path}:${symbol.range.start.line + 1}`,
       symbol,
     };

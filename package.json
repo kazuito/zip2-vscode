@@ -25,6 +25,21 @@
           },
           "default": [],
           "description": "Additional glob patterns to exclude from indexing (e.g. [\"**/generated/**\", \"**/.turbo/**\"])."
+        },
+        "zip2.functionLabelFormat": {
+          "type": "string",
+          "default": "${name}()",
+          "description": "Label format for functions. Use ${name} as a placeholder for the symbol name."
+        },
+        "zip2.componentLabelFormat": {
+          "type": "string",
+          "default": "<${name} />",
+          "description": "Label format for components. Use ${name} as a placeholder for the symbol name."
+        },
+        "zip2.hookLabelFormat": {
+          "type": "string",
+          "default": "${name}()",
+          "description": "Label format for hooks. Use ${name} as a placeholder for the symbol name."
         }
       }
     },
