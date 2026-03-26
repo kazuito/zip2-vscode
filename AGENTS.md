@@ -1,13 +1,13 @@
 # Zip2
 
-- VS Code extension for searching workspace functions and React-style function components in `.js`, `.jsx`, `.ts`, and `.tsx` files.
+- VS Code extension for searching workspace functions, React-style components, and React hooks in `.js`, `.jsx`, `.ts`, and `.tsx` files.
 - Use Context7 MCP when you need library/API documentation, code generation, setup steps, or configuration details.
 
 ## Repo Map
 
 - `src/extension.ts`: command registration and Quick Pick entrypoints.
 - `src/symbolIndexService.ts`: background in-memory indexing, file watching, and incremental updates.
-- `src/symbols.ts`: TypeScript AST parsing and function/component classification.
+- `src/symbols.ts`: TypeScript AST parsing and function/component/hook classification.
 - `src/pickerItems.ts`: transforms indexed symbols into Quick Pick items.
 - `src/navigation.ts`: opens the target location in the editor.
 - `src/test/`: VS Code extension-host tests.
@@ -38,6 +38,8 @@ pnpm test
 - Keep indexing lightweight: avoid full TypeScript programs/typechecking inside the indexer; this repo intentionally uses `ts.createSourceFile(...)`.
 - Do not edit `dist/` or `out/` manually. Regenerate them through the provided scripts.
 - If you change command ids or titles, update both `src/extension.ts` and `package.json`.
+- Recently visited symbols are persisted in `workspaceState` under the key `zip2.recentSymbols` as `{ name, path }` pairs (max 5).
+- User-configurable exclude globs live in the `zip2.excludePatterns` setting; applied in both `findFiles` and the watcher path filter in `src/symbolIndexService.ts`.
 - Always keep this AGENTS.md (or CLAUDE.md = symlink) up to date as codebase evolve.
 
 ## Safety / Gotchas

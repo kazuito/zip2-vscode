@@ -31,7 +31,7 @@
     "commands": [
       {
         "command": "zip2.searchSymbols",
-        "title": "Search Components and Functions",
+        "title": "Search Symbols",
         "category": "Zip2"
       },
       {

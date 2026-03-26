@@ -14,8 +14,8 @@ const COMMANDS: ReadonlyArray<{
   {
     id: "zip2.searchSymbols",
     mode: "all",
-    title: "Zip2: Search Components and Functions",
-    placeholder: "Search components and functions",
+    title: "Zip2: Search Symbols",
+    placeholder: "Search components, functions and hooks",
   },
   {
     id: "zip2.searchComponents",
