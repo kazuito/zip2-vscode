@@ -14,6 +14,12 @@ const EXCLUDE_SEGMENTS = new Set([
   "coverage",
 ]);
 const DOCUMENT_UPDATE_DEBOUNCE_MS = 200;
+const INITIAL_INDEX_CONCURRENCY = 6;
+
+interface SnapshotSegment {
+  readonly offset: number;
+  readonly length: number;
+}
 
 function isFileUri(uri: vscode.Uri): boolean {
   return uri.scheme === "file";
@@ -44,8 +50,56 @@ function isFileMissing(error: unknown): boolean {
   );
 }
 
+function areSymbolsEqual(
+  left: readonly IndexedSymbol[],
+  right: readonly IndexedSymbol[],
+): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    const leftSymbol = left[index];
+    const rightSymbol = right[index];
+
+    if (
+      leftSymbol.name !== rightSymbol.name ||
+      leftSymbol.kind !== rightSymbol.kind ||
+      leftSymbol.path !== rightSymbol.path ||
+      leftSymbol.uri.toString() !== rightSymbol.uri.toString() ||
+      !leftSymbol.range.isEqual(rightSymbol.range)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function runWithConcurrency<T>(
+  items: readonly T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  let nextIndex = 0;
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        await worker(items[currentIndex]);
+      }
+    },
+  );
+
+  await Promise.all(workers);
+}
+
 export class SymbolIndexService implements vscode.Disposable {
   private readonly symbolsByUri = new Map<string, readonly IndexedSymbol[]>();
+  private readonly snapshotSegments = new Map<string, SnapshotSegment>();
   private readonly pendingDocumentUpdates = new Map<
     string,
     ReturnType<typeof setTimeout>
@@ -53,7 +107,7 @@ export class SymbolIndexService implements vscode.Disposable {
   private readonly changeEmitter = new vscode.EventEmitter<void>();
   private initializationPromise: Promise<void> | undefined;
   private initialized = false;
-  private snapshot: readonly IndexedSymbol[] = [];
+  private snapshot: IndexedSymbol[] = [];
   private disposed = false;
 
   readonly onDidChangeIndex = this.changeEmitter.event;
@@ -154,8 +208,10 @@ export class SymbolIndexService implements vscode.Disposable {
       uniqueUris.set(document.uri.toString(), document.uri);
     }
 
-    await Promise.all(
-      [...uniqueUris.values()].map(async (uri) => {
+    await runWithConcurrency(
+      [...uniqueUris.values()],
+      INITIAL_INDEX_CONCURRENCY,
+      async (uri) => {
         const openDocument = openDocuments.get(uri.toString());
 
         if (openDocument) {
@@ -171,10 +227,8 @@ export class SymbolIndexService implements vscode.Disposable {
             console.error(`Zip2 failed to index ${uri.fsPath}.`, error);
           }
         }
-      }),
+      },
     );
-
-    this.rebuildSnapshot(true);
   }
 
   private scheduleDocumentUpdate(document: vscode.TextDocument): void {
@@ -234,33 +288,98 @@ export class SymbolIndexService implements vscode.Disposable {
   }
 
   private removeUri(uri: vscode.Uri): void {
-    const didDelete = this.symbolsByUri.delete(uri.toString());
+    const key = uri.toString();
+    const didDelete = this.symbolsByUri.delete(key);
 
-    if (didDelete) {
-      this.rebuildSnapshot(true);
+    if (!didDelete) {
+      return;
     }
+
+    this.removeSnapshotSegment(key);
+    this.changeEmitter.fire();
   }
 
   private updateUriSymbols(
     uri: vscode.Uri,
     text: string,
     emitChange: boolean,
-  ): void {
+  ): boolean {
     if (this.disposed) {
-      return;
+      return false;
     }
 
+    const key = uri.toString();
     const relativePath = vscode.workspace.asRelativePath(uri, false);
     const symbols = extractSymbolsFromText(uri, relativePath, text);
-    this.symbolsByUri.set(uri.toString(), symbols);
-    this.rebuildSnapshot(emitChange);
-  }
+    const previousSymbols = this.symbolsByUri.get(key) ?? [];
 
-  private rebuildSnapshot(emitChange: boolean): void {
-    this.snapshot = [...this.symbolsByUri.values()].flat();
+    if (areSymbolsEqual(previousSymbols, symbols)) {
+      return false;
+    }
+
+    this.symbolsByUri.set(key, symbols);
+    this.replaceSnapshotSegment(key, symbols);
 
     if (emitChange) {
       this.changeEmitter.fire();
+    }
+
+    return true;
+  }
+
+  private removeSnapshotSegment(key: string): void {
+    const segment = this.snapshotSegments.get(key);
+
+    if (!segment) {
+      return;
+    }
+
+    this.snapshot.splice(segment.offset, segment.length);
+    this.snapshotSegments.delete(key);
+    this.shiftSegmentsAfter(segment.offset, -segment.length);
+  }
+
+  private replaceSnapshotSegment(
+    key: string,
+    symbols: readonly IndexedSymbol[],
+  ): void {
+    const previousSegment = this.snapshotSegments.get(key);
+    const offset = previousSegment?.offset ?? this.snapshot.length;
+    const previousLength = previousSegment?.length ?? 0;
+    const nextLength = symbols.length;
+
+    this.snapshot.splice(offset, previousLength, ...symbols);
+
+    if (nextLength === 0) {
+      this.snapshotSegments.delete(key);
+    } else {
+      this.snapshotSegments.set(key, {
+        offset,
+        length: nextLength,
+      });
+    }
+
+    this.shiftSegmentsAfter(offset, nextLength - previousLength, key);
+  }
+
+  private shiftSegmentsAfter(
+    offset: number,
+    delta: number,
+    currentKey?: string,
+  ): void {
+    if (delta === 0) {
+      return;
+    }
+
+    for (const [key, segment] of this.snapshotSegments) {
+      if (key === currentKey || segment.offset <= offset) {
+        continue;
+      }
+
+      this.snapshotSegments.set(key, {
+        offset: segment.offset + delta,
+        length: segment.length,
+      });
     }
   }
 }
