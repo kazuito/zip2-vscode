@@ -3,6 +3,7 @@
   "displayName": "Zip2",
   "description": "Quick search for workspace functions and React-style components.",
   "version": "0.0.1",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.110.0"
   },
