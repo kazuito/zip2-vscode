@@ -11,7 +11,8 @@ Commands:
 
 ## Features
 
-- **Icons** — codicons in the picker distinguish components (`$(symbol-class)`), functions (`$(symbol-function)`), and hooks (`$(symbol-event)`)
-- **Peek** — highlights the active item's location in the editor as you navigate the list
+- **HOC-aware indexing** — components wrapped with `memo`, `forwardRef`, `React.memo`, or `React.forwardRef` (including nested combinations) are indexed and classified correctly
+- **Open to the Side** — every picker item has a split-editor button to open the symbol beside the current editor
 - **Recently visited** — last 5 accepted symbols appear at the top of every picker
+- **Configurable labels** — control how each kind is displayed via `zip2.functionLabelFormat`, `zip2.componentLabelFormat`, and `zip2.hookLabelFormat` (use `${name}` as the placeholder)
 - **Configurable excludes** — add extra glob patterns via `zip2.excludePatterns` in settings (e.g. `["**/generated/**"]`)

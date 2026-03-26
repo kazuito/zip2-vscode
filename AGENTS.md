@@ -40,7 +40,12 @@ pnpm test
 - If you change command ids or titles, update both `src/extension.ts` and `package.json`.
 - Recently visited symbols are persisted in `workspaceState` under the key `zip2.recentSymbols` as `{ name, path }` pairs (max 5).
 - User-configurable exclude globs live in the `zip2.excludePatterns` setting; applied in both `findFiles` and the watcher path filter in `src/symbolIndexService.ts`.
-- Always keep this AGENTS.md (or CLAUDE.md = symlink) up to date as codebase evolve.
+- HOC unwrapping (`memo`, `forwardRef`, `React.memo`, `React.forwardRef`) is handled in `src/symbols.ts` via `unwrapHocCallable`. Add new wrappers to `COMPONENT_WRAPPERS` there.
+- Label formats for each symbol kind are user-configurable via `zip2.{function,component,hook}LabelFormat` settings; `${name}` is the placeholder. Applied in `src/pickerItems.ts`.
+- Picker item sort+map result is cached per picker session in `extension.ts` (`cachedBaseItems`); cleared on `onDidChangeIndex`. Don't call `createQuickPickItems` directly in `buildItems` — go through `getBaseItems()`.
+- Each picker item has an "Open to the Side" button (`OPEN_BESIDE_BUTTON`). Button clicks are handled via `quickPick.onDidTriggerItemButton` → `navigateToItem(item, ViewColumn.Beside)`.
+- `openIndexedSymbol` in `src/navigation.ts` accepts an optional `viewColumn`; omit for active column, pass `ViewColumn.Beside` for split.
+- **Always keep this AGENTS.md up to date as codebase evolve.** You must update AGENTS.md even if you are'nt instructed to do. If you are Claude, update CLAUDE.md instead.
 
 ## Safety / Gotchas
 
