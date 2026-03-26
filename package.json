@@ -3,7 +3,28 @@
   "displayName": "Zip2",
   "description": "Quick search for workspace functions and React-style components.",
   "version": "0.0.1",
+  "publisher": "kazuito",
+  "license": "MIT",
   "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kazuito/zip2-vscode.git"
+  },
+  "homepage": "https://github.com/kazuito/zip2-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/kazuito/zip2-vscode/issues"
+  },
+  "keywords": [
+    "search",
+    "symbols",
+    "functions",
+    "components",
+    "hooks",
+    "react",
+    "navigation",
+    "typescript",
+    "javascript"
+  ],
   "engines": {
     "vscode": "^1.110.0"
   },
