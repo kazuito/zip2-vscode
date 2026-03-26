@@ -14,6 +14,19 @@
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
+  "scripts": {
+    "vscode:prepublish": "pnpm bundle",
+    "bundle": "rolldown --config rolldown.config.ts",
+    "watch": "rolldown --config rolldown.config.ts --watch",
+    "compile-tests": "node ./scripts/compile-tests.mjs",
+    "lint": "biome lint",
+    "format": "biome format --write",
+    "check": "pnpm biome check --write --unsafe && pnpm typecheck",
+    "pretest": "pnpm bundle && pnpm compile-tests",
+    "test": "vscode-test",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
+  },
   "contributes": {
     "configuration": {
       "title": "Zip2",
@@ -65,19 +78,6 @@
         "category": "Zip2"
       }
     ]
-  },
-  "scripts": {
-    "vscode:prepublish": "pnpm bundle",
-    "bundle": "rolldown --config rolldown.config.ts",
-    "watch": "rolldown --config rolldown.config.ts --watch",
-    "compile-tests": "node ./scripts/compile-tests.mjs",
-    "lint": "biome lint",
-    "format": "biome format --write",
-    "check": "pnpm biome check --write --unsafe && pnpm typecheck",
-    "pretest": "pnpm bundle && pnpm compile-tests",
-    "test": "vscode-test",
-    "typecheck": "tsc --noEmit",
-    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",
