@@ -1,6 +1,6 @@
 import * as path from "node:path";
-import * as vscode from "vscode";
 import ignore, { type Ignore } from "ignore";
+import * as vscode from "vscode";
 import { extractSymbolsFromText, isSupportedFilePath } from "./symbols";
 import type { IndexedSymbol } from "./types";
 
