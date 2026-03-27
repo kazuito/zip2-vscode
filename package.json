@@ -2,7 +2,7 @@
   "name": "zip2",
   "displayName": "Zip2",
   "description": "Quick search for workspace functions and React-style components.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "kazuito",
   "license": "MIT",
   "icon": "icon.png",
