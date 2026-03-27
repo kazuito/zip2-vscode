@@ -13,14 +13,17 @@ export function getRespectGitignore(): boolean {
 }
 
 export function getFunctionLabelFormat(): string {
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional format placeholder
   return get<string>("functionLabelFormat", "${name}()");
 }
 
 export function getComponentLabelFormat(): string {
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional format placeholder
   return get<string>("componentLabelFormat", "<${name} />");
 }
 
 export function getHookLabelFormat(): string {
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional format placeholder
   return get<string>("hookLabelFormat", "${name}()");
 }
 

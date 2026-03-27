@@ -1,5 +1,9 @@
-import vscode from "vscode";
-import { getComponentLabelFormat, getFunctionLabelFormat, getHookLabelFormat } from "./config";
+import type vscode from "vscode";
+import {
+  getComponentLabelFormat,
+  getFunctionLabelFormat,
+  getHookLabelFormat,
+} from "./config";
 import type { IndexedSymbol, SearchMode } from "./types";
 
 export interface SymbolQuickPickItem extends vscode.QuickPickItem {
@@ -40,6 +44,7 @@ export function createQuickPickItems(
   };
 
   return filteredSymbols.map((symbol) => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional format placeholder
     const label = formats[symbol.kind].replace("${name}", symbol.name);
     return {
       label,
