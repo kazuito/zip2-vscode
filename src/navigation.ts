@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import vscode from "vscode";
 import type { IndexedSymbol } from "./types";
 
 export async function openIndexedSymbol(

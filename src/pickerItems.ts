@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import vscode from "vscode";
 import type { IndexedSymbol, SearchMode } from "./types";
 
 export interface SymbolQuickPickItem extends vscode.QuickPickItem {

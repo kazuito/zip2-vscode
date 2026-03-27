@@ -1,6 +1,6 @@
-import * as path from "node:path";
-import * as ts from "typescript";
-import * as vscode from "vscode";
+import path from "node:path";
+import ts from "typescript";
+import vscode from "vscode";
 import type { IndexedSymbol, IndexedSymbolKind } from "./types";
 
 const SUPPORTED_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx"]);

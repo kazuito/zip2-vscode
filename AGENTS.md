@@ -34,6 +34,7 @@ pnpm test
 
 ## Codebase Rules
 
+- Use default imports (`import vscode from "vscode"`) over namespace imports (`import * as vscode from "vscode"`). `module: "Node16"` enables `esModuleInterop` so default imports work for all packages used here.
 - Keep the extension JS/TS-only unless the repo is explicitly broadened; supported file detection lives in `src/symbols.ts`.
 - Keep indexing lightweight: avoid full TypeScript programs/typechecking inside the indexer; this repo intentionally uses `ts.createSourceFile(...)`.
 - Do not edit `dist/` or `out/` manually. Regenerate them through the provided scripts.

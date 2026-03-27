@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import vscode from "vscode";
 import { openIndexedSymbol } from "./navigation";
 import type { SymbolQuickPickItem } from "./pickerItems";
 import { createQuickPickItems } from "./pickerItems";

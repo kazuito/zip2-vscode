@@ -1,5 +1,5 @@
-import * as assert from "node:assert";
-import * as vscode from "vscode";
+import assert from "node:assert";
+import vscode from "vscode";
 import { extractSymbolsFromText } from "../symbols";
 
 suite("extractSymbolsFromText", () => {

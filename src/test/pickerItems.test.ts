@@ -1,5 +1,5 @@
-import * as assert from "node:assert";
-import * as vscode from "vscode";
+import assert from "node:assert";
+import vscode from "vscode";
 import { createQuickPickItems } from "../pickerItems";
 import type { IndexedSymbol } from "../types";
 
