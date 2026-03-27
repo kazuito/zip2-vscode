@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import vscode from "vscode";
-import { extractSymbolsFromText } from "../symbols";
+import { extractSymbolsFromText, isSupportedFilePath } from "../symbols";
 
 suite("extractSymbolsFromText", () => {
   test("extracts top-level functions and components", () => {
@@ -168,5 +168,88 @@ suite("extractSymbolsFromText", () => {
       symbols.map((symbol) => [symbol.name, symbol.kind]),
       [["input", "function"]],
     );
+  });
+
+  test("classifies useXxx arrow functions as hooks", () => {
+    const source = `
+      export const useCounter = () => {
+        return 0;
+      };
+
+      export const useFormField = function() {
+        return "";
+      };
+    `;
+
+    const symbols = extractSymbolsFromText(
+      vscode.Uri.file("/workspace/src/useCounter.ts"),
+      "src/useCounter.ts",
+      source,
+    );
+
+    assert.deepStrictEqual(
+      symbols.map((s) => [s.name, s.kind]),
+      [
+        ["useCounter", "hook"],
+        ["useFormField", "hook"],
+      ],
+    );
+  });
+
+  test("classifies useXxx function declarations as hooks", () => {
+    const source = `
+      export function useTheme() {
+        return "light";
+      }
+    `;
+
+    const symbols = extractSymbolsFromText(
+      vscode.Uri.file("/workspace/src/useTheme.ts"),
+      "src/useTheme.ts",
+      source,
+    );
+
+    assert.deepStrictEqual(
+      symbols.map((s) => [s.name, s.kind]),
+      [["useTheme", "hook"]],
+    );
+  });
+
+  test("PascalCase function without JSX in .ts file stays as function", () => {
+    const source = `
+      export function MyHelper() {
+        return "plain string, no jsx";
+      }
+    `;
+
+    const symbols = extractSymbolsFromText(
+      vscode.Uri.file("/workspace/src/MyHelper.ts"),
+      "src/MyHelper.ts",
+      source,
+    );
+
+    assert.deepStrictEqual(
+      symbols.map((s) => [s.name, s.kind]),
+      [["MyHelper", "function"]],
+    );
+  });
+});
+
+suite("isSupportedFilePath", () => {
+  test("accepts .js, .jsx, .ts, .tsx", () => {
+    assert.ok(isSupportedFilePath("src/foo.js"));
+    assert.ok(isSupportedFilePath("src/foo.jsx"));
+    assert.ok(isSupportedFilePath("src/foo.ts"));
+    assert.ok(isSupportedFilePath("src/foo.tsx"));
+  });
+
+  test("rejects .d.ts files", () => {
+    assert.strictEqual(isSupportedFilePath("src/foo.d.ts"), false);
+  });
+
+  test("rejects unsupported extensions", () => {
+    assert.strictEqual(isSupportedFilePath("src/foo.vue"), false);
+    assert.strictEqual(isSupportedFilePath("src/foo.py"), false);
+    assert.strictEqual(isSupportedFilePath("src/foo.css"), false);
   });
 });
