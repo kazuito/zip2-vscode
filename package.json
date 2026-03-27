@@ -79,6 +79,12 @@
           "type": "string",
           "default": "${name}()",
           "description": "Label format for hooks. Use ${name} as a placeholder for the symbol name."
+        },
+        "zip2.recentSymbolsCount": {
+          "type": "number",
+          "default": 5,
+          "minimum": 0,
+          "description": "Maximum number of recently visited symbols to show at the top of the picker."
         }
       }
     },

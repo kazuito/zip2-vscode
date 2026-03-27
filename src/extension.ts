@@ -1,4 +1,5 @@
 import vscode from "vscode";
+import { getRecentSymbolsCount } from "./config";
 import { openIndexedSymbol } from "./navigation";
 import type { SymbolQuickPickItem } from "./pickerItems";
 import { createQuickPickItems } from "./pickerItems";
@@ -128,7 +129,7 @@ async function showJumpPicker(
       ...recents.filter(
         (r) => !(r.name === entry.name && r.path === entry.path),
       ),
-    ].slice(0, 5);
+    ].slice(0, getRecentSymbolsCount());
     void context.workspaceState.update(RECENT_KEY, updated);
     void openIndexedSymbol(item.symbol, viewColumn);
   };

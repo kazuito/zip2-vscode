@@ -1,4 +1,5 @@
 import vscode from "vscode";
+import { getComponentLabelFormat, getFunctionLabelFormat, getHookLabelFormat } from "./config";
 import type { IndexedSymbol, SearchMode } from "./types";
 
 export interface SymbolQuickPickItem extends vscode.QuickPickItem {
@@ -32,16 +33,14 @@ export function createQuickPickItems(
 
   filteredSymbols.sort(compareSymbols);
 
-  const config = vscode.workspace.getConfiguration("zip2");
   const formats = {
-    function: config.get<string>("functionLabelFormat"),
-    component: config.get<string>("componentLabelFormat"),
-    hook: config.get<string>("hookLabelFormat"),
+    function: getFunctionLabelFormat(),
+    component: getComponentLabelFormat(),
+    hook: getHookLabelFormat(),
   };
 
   return filteredSymbols.map((symbol) => {
-    const fmt = formats[symbol.kind];
-    const label = fmt ? fmt.replace("${name}", symbol.name) : symbol.name;
+    const label = formats[symbol.kind].replace("${name}", symbol.name);
     return {
       label,
       description: symbol.kind.charAt(0).toUpperCase() + symbol.kind.slice(1),

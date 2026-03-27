@@ -1,6 +1,7 @@
 import path from "node:path";
 import ignore, { type Ignore } from "ignore";
 import vscode from "vscode";
+import { getExcludePatterns, getRespectGitignore } from "./config";
 import { extractSymbolsFromText, isSupportedFilePath } from "./symbols";
 import type { IndexedSymbol } from "./types";
 
@@ -27,9 +28,7 @@ function isFileUri(uri: vscode.Uri): boolean {
 }
 
 function buildExcludeGlob(): string {
-  const user = vscode.workspace
-    .getConfiguration("zip2")
-    .get<string[]>("excludePatterns", []);
+  const user = getExcludePatterns();
   if (user.length === 0) return INDEX_EXCLUDE_GLOB;
   return `{${INDEX_EXCLUDE_GLOB},${user.join(",")}}`;
 }
@@ -45,9 +44,7 @@ function isIgnoredPath(
 ): boolean {
   const segments = filePath.split(path.sep);
   if (segments.some((seg) => EXCLUDE_SEGMENTS.has(seg))) return true;
-  const userPatterns = vscode.workspace
-    .getConfiguration("zip2")
-    .get<string[]>("excludePatterns", []);
+  const userPatterns = getExcludePatterns();
   for (const pattern of userPatterns) {
     const match = /^\*\*\/([^/*]+)\/\*\*$/.exec(pattern);
     if (match && segments.includes(match[1])) return true;
@@ -219,9 +216,7 @@ export class SymbolIndexService implements vscode.Disposable {
 
   private async loadGitignoreFilters(): Promise<void> {
     this.gitignoreFilters = [];
-    const respectGitignore = vscode.workspace
-      .getConfiguration("zip2")
-      .get<boolean>("respectGitignore", true);
+    const respectGitignore = getRespectGitignore();
     if (!respectGitignore) return;
 
     const uris = await vscode.workspace.findFiles(
