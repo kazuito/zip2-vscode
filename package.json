@@ -92,22 +92,26 @@
       {
         "command": "zip2.searchSymbols",
         "title": "Search Symbols",
-        "category": "Zip2"
+        "category": "Zip2",
+        "icon": "$(symbol-misc)"
       },
       {
         "command": "zip2.searchComponents",
         "title": "Search Components",
-        "category": "Zip2"
+        "category": "Zip2",
+        "icon": "$(symbol-class)"
       },
       {
         "command": "zip2.searchFunctions",
         "title": "Search Functions",
-        "category": "Zip2"
+        "category": "Zip2",
+        "icon": "$(symbol-function)"
       },
       {
         "command": "zip2.searchHooks",
         "title": "Search Hooks",
-        "category": "Zip2"
+        "category": "Zip2",
+        "icon": "$(symbol-event)"
       }
     ]
   },
