@@ -72,9 +72,10 @@ async function showJumpPicker(
 
   const getBaseItems = (): SymbolQuickPickItem[] => {
     if (!cachedBaseItems) {
-      cachedBaseItems = createQuickPickItems(indexService.getSymbols(), mode).map(
-        (item) => ({ ...item, buttons: [OPEN_BESIDE_BUTTON] }),
-      );
+      cachedBaseItems = createQuickPickItems(
+        indexService.getSymbols(),
+        mode,
+      ).map((item) => ({ ...item, buttons: [OPEN_BESIDE_BUTTON] }));
     }
     return cachedBaseItems;
   };

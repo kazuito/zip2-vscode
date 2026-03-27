@@ -40,6 +40,7 @@ pnpm test
 - If you change command ids or titles, update both `src/extension.ts` and `package.json`.
 - Recently visited symbols are persisted in `workspaceState` under the key `zip2.recentSymbols` as `{ name, path }` pairs (max 5).
 - User-configurable exclude globs live in the `zip2.excludePatterns` setting; applied in both `findFiles` and the watcher path filter in `src/symbolIndexService.ts`.
+- `.gitignore` respect is controlled by `zip2.respectGitignore` (boolean, default `true`). When enabled, `loadGitignoreFilters()` in `src/symbolIndexService.ts` finds all `**/.gitignore` files at startup and builds `GitignoreFilter[]` entries (using the `ignore` npm package). The filters are checked in `isIgnoredPath()` and cover both the initial `findFiles` scan and all watcher events. Takes effect on the next reload.
 - HOC unwrapping (`memo`, `forwardRef`, `React.memo`, `React.forwardRef`) is handled in `src/symbols.ts` via `unwrapHocCallable`. Add new wrappers to `COMPONENT_WRAPPERS` there.
 - Label formats for each symbol kind are user-configurable via `zip2.{function,component,hook}LabelFormat` settings; `${name}` is the placeholder. Applied in `src/pickerItems.ts`.
 - Picker item sort+map result is cached per picker session in `extension.ts` (`cachedBaseItems`); cleared on `onDidChangeIndex`. Don't call `createQuickPickItems` directly in `buildItems` — go through `getBaseItems()`.

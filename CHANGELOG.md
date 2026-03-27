@@ -2,6 +2,12 @@
 
 All notable changes to the "zip2" extension will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- `zip2.respectGitignore` setting (default `true`) — files and folders matched by any `.gitignore` in the workspace are now excluded from indexing by default
+
 ## [0.0.1] - 2026-03-27
 
 ### Added

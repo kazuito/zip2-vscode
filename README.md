@@ -39,6 +39,13 @@ Control how each symbol kind is displayed.
 "zip2.hookLabelFormat": "${name}()"        // default
 ```
 
+**Gitignore-aware**
+Files and folders matched by any `.gitignore` in your workspace are excluded from indexing by default. Disable with:
+
+```jsonc
+"zip2.respectGitignore": false
+```
+
 **Exclude patterns**
 Skip generated or irrelevant directories.
 

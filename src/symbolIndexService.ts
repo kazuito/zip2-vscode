@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
+import ignore, { type Ignore } from "ignore";
 import { extractSymbolsFromText, isSupportedFilePath } from "./symbols";
 import type { IndexedSymbol } from "./types";
 
@@ -33,7 +34,15 @@ function buildExcludeGlob(): string {
   return `{${INDEX_EXCLUDE_GLOB},${user.join(",")}}`;
 }
 
-function isIgnoredPath(filePath: string): boolean {
+interface GitignoreFilter {
+  readonly dir: string;
+  readonly ig: Ignore;
+}
+
+function isIgnoredPath(
+  filePath: string,
+  gitignoreFilters: readonly GitignoreFilter[],
+): boolean {
   const segments = filePath.split(path.sep);
   if (segments.some((seg) => EXCLUDE_SEGMENTS.has(seg))) return true;
   const userPatterns = vscode.workspace
@@ -43,14 +52,23 @@ function isIgnoredPath(filePath: string): boolean {
     const match = /^\*\*\/([^/*]+)\/\*\*$/.exec(pattern);
     if (match && segments.includes(match[1])) return true;
   }
+  for (const { dir, ig } of gitignoreFilters) {
+    const rel = path.relative(dir, filePath);
+    if (!rel.startsWith("..") && !path.isAbsolute(rel)) {
+      if (ig.ignores(rel.split(path.sep).join("/"))) return true;
+    }
+  }
   return false;
 }
 
-function isIndexableUri(uri: vscode.Uri): boolean {
+function isIndexableUri(
+  uri: vscode.Uri,
+  gitignoreFilters: readonly GitignoreFilter[],
+): boolean {
   return (
     isFileUri(uri) &&
     isSupportedFilePath(uri.fsPath) &&
-    !isIgnoredPath(uri.fsPath)
+    !isIgnoredPath(uri.fsPath, gitignoreFilters)
   );
 }
 
@@ -124,6 +142,7 @@ export class SymbolIndexService implements vscode.Disposable {
   private initialized = false;
   private snapshot: IndexedSymbol[] = [];
   private disposed = false;
+  private gitignoreFilters: GitignoreFilter[] = [];
 
   readonly onDidChangeIndex = this.changeEmitter.event;
 
@@ -198,11 +217,37 @@ export class SymbolIndexService implements vscode.Disposable {
     return this.initializationPromise;
   }
 
+  private async loadGitignoreFilters(): Promise<void> {
+    this.gitignoreFilters = [];
+    const respectGitignore = vscode.workspace
+      .getConfiguration("zip2")
+      .get<boolean>("respectGitignore", true);
+    if (!respectGitignore) return;
+
+    const uris = await vscode.workspace.findFiles(
+      "**/.gitignore",
+      buildExcludeGlob(),
+    );
+    for (const uri of uris) {
+      try {
+        const text = await readUriText(uri);
+        this.gitignoreFilters.push({
+          dir: path.dirname(uri.fsPath),
+          ig: ignore().add(text),
+        });
+      } catch {
+        // skip unreadable .gitignore files
+      }
+    }
+  }
+
   private async buildInitialIndex(): Promise<void> {
+    await this.loadGitignoreFilters();
+
     const openDocuments = new Map<string, vscode.TextDocument>();
 
     for (const document of vscode.workspace.textDocuments) {
-      if (isIndexableUri(document.uri)) {
+      if (isIndexableUri(document.uri, this.gitignoreFilters)) {
         openDocuments.set(document.uri.toString(), document);
       }
     }
@@ -214,7 +259,7 @@ export class SymbolIndexService implements vscode.Disposable {
     const uniqueUris = new Map<string, vscode.Uri>();
 
     for (const uri of discoveredUris) {
-      if (isIndexableUri(uri)) {
+      if (isIndexableUri(uri, this.gitignoreFilters)) {
         uniqueUris.set(uri.toString(), uri);
       }
     }
@@ -247,7 +292,7 @@ export class SymbolIndexService implements vscode.Disposable {
   }
 
   private scheduleDocumentUpdate(document: vscode.TextDocument): void {
-    if (!isIndexableUri(document.uri)) {
+    if (!isIndexableUri(document.uri, this.gitignoreFilters)) {
       return;
     }
 
@@ -275,7 +320,7 @@ export class SymbolIndexService implements vscode.Disposable {
   }
 
   private async reindexFromDisk(uri: vscode.Uri): Promise<void> {
-    if (!isIndexableUri(uri)) {
+    if (!isIndexableUri(uri, this.gitignoreFilters)) {
       this.removeUri(uri);
       return;
     }

@@ -60,6 +60,11 @@
           "default": [],
           "description": "Additional glob patterns to exclude from indexing (e.g. [\"**/generated/**\", \"**/.turbo/**\"])."
         },
+        "zip2.respectGitignore": {
+          "type": "boolean",
+          "default": true,
+          "description": "When enabled, files and folders matched by any .gitignore file in the workspace are excluded from indexing. Takes effect on the next reload."
+        },
         "zip2.functionLabelFormat": {
           "type": "string",
           "default": "${name}()",
@@ -111,5 +116,8 @@
     "npm-run-all": "^4.1.5",
     "rolldown": "1.0.0-rc.12",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "ignore": "^7.0.5"
   }
 }
