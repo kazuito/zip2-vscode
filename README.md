@@ -18,6 +18,8 @@ Jump to any function, React component, or hook — without leaving your keyboard
 
 Open the Command Palette (`⇧⌘P`) and type `Zip2` to get started.
 
+![Zip2 "Search Symbols" demo](./demo.jpg)
+
 ## Features
 
 **HOC-aware**
