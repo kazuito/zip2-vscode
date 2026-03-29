@@ -4,6 +4,12 @@ All notable changes to the "zip2" extension will be documented in this file.
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-03-29
+
+### Changed
+
+- Production bundle is now minified and tree-shaken — bundle size reduced from ~7.5 MB to ~3.3 MB (~60% smaller)
+
 ## [0.0.2] - 2026-03-27
 
 ### Added
